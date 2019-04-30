@@ -126,15 +126,12 @@ bot.onText(/\/next/, msg => {
     if (msg.chat.id === teacherID) {
         tempQueue = [];
         let j = 0;
-
         queue.forEach((val, i, queue) => {
             if (val != 0) {
                 tempQueue[j] = queue[i];
             }
         })
-
         queue = tempQueue;
-
         bot.sendMessage(queue.shift(), 'Ваша очередь!');
     }
 })
