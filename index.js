@@ -124,20 +124,19 @@ bot.onText(/\/leave/, msg => {
 
 bot.onText(/\/next/, msg => {
     if (msg.chat.id === teacherID) {
-        queue.forEach((val, i, queue) => {
-            if (queue[i] != 0 && val === msg.chat.id)
-                bot.sendMessage(queue.shift(), 'Ваша очередь!');
-        })
-    }
-    tempQueue = [];
-    queue.forEach((val, i, queue) => {
+        tempQueue = [];
         let j = 0;
-        if (val != 0) {
-            tempQueue[j] = queue[i];
-            j++;
-        }
-    });
-    queue = tempQueue;
+
+        queue.forEach((val, i, queue) => {
+            if (val != 0) {
+                tempQueue[j] = queue[i];
+            }
+        })
+
+        queue = tempQueue;
+
+        bot.sendMessage(queue.shift(), 'Ваша очередь!');
+    }
 })
 /*
 bot.on('message', async msg => {
