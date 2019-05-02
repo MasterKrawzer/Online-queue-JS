@@ -10,6 +10,7 @@ var queue = [];
 var teacherID
 var muteID = [];
 
+
 const studentKeyboard = {
     reply_markup: JSON.stringify({
         keyboard: [["Добавиться в очередь", "Покинуть очередь"], ["Посмотреть место в очереди"]],
@@ -20,60 +21,38 @@ const teacherKeyboard = {
         keyboard: [["Вызвать ученика", "Посмотреть очередь"], ["Выйти"]],
     })
 }
-function logToFile(type, msg, id) {
-    console.log('entered log');
-
+function logToFile(msg, id) {
     var date = new Date(msg.date * 1000);
-
-    if (type == 'log') {
-        console.log('logging');
-
-        switch (id) {
-            case 1: //Authorisation complete //ALL CLEAR
-                let data = "Консоль: Успешная авторизация учителя\n"
-                    + 'Имя пользователя: ' + msg.chat.username + ',\n'
-                    + 'ID чата: ' + msg.chat.id + ',\n'
-                    + 'Время (unix): ' + msg.date + ',\n'
-                    + 'Время (нормальное): ' + date.toLocaleString() + '.\n\n';
-                fs.appendFileSync('./log.txt', data);
-                break;
-
-
-            case 2: //Deauthorisation complete
-                let data = 'Консоль: Успешная деавторизация учителя\n'
-                    + 'Имя пользователя: ' + msg.chat.username + ',\n'
-                    + 'ID чата: ' + msg.chat.id + ',\n'
-                    + 'Время (unix): ' + msg.chat.date + ',\n'
-                    + 'Время (нормальное): ' + date.toLocaleString() + '.\n\n';
-                fs.appendFileSync('./log.txt', data);
-                break;
-        }
-
+    if (id === 1) {
+        data = "Успешная авторизация учителя: \n";
+        data += "Имя пользователя: " + msg.chat.username + ',\n';
+        data += "ID чата: " + msg.chat.id + ',\n';
+        data += "Время: " + date.toLocaleString() + '.\n\n';
     }
-    /*
-    if (type == 'error') {
-        switch (id) {
-            case 1: //Failed authorisation 
-                let data = 'Ошибка 1: Ошибка авторизации\n'
-                    + 'Имя пользователя: ' + msg.chat.username + ',\n'
-                    + 'ID чата: ' + msg.chat.id + ',\n'
-                    + 'Попытка: ' + tries + ',\n'
-                    + 'Время (unix): ' + msg.date + ',\n'
-                    + 'Время (нормальное): ' + date.toLocaleString() + '\n\n';
-                fs.appendFileSync('./log.txt', data);
-                break;
-
-                    case 2: //Failed deauthorisation
-                    let data = "Oшибка 2: Недостаточно прав для деавторизации учителя: \n"
-                    + 'Имя: ' + msg.chat.username + ",\n"
-                    + 'ID чата: ' + msg.chat.id + ",\n"
-                    + 'Время (unix): ' + msg.date + ",\n"
-                    + 'Время (нормальное): ' + date.toLocaleString() + '\n\n';
-                    fs.appendFileSync('./log.txt', data);
-                    break;
-                }
-            }
-            */
+    if (id === 2) {
+        data = "Успешная деавторизация учителя: \n";
+        data += "Имя пользователя: " + msg.chat.username + ',\n';
+        data += "ID чата: " + msg.chat.id + ',\n';
+        data += "Время: " + date.toLocaleString() + '.\n\n';
+    }
+    fs.appendFileSync('log.txt', data);
+}
+function errorToFile(msg, id) {
+    var date = new Date(msg.date * 1000);
+    if (id === 1) {
+        data = "Ошибка авторизации учителя: \n";
+        data += "Имя пользователя: " + msg.chat.username + ',\n';
+        data += "ID чата: " + msg.chat.id + ',\n';
+        data += "Время: " + date.toLocaleString() + '.\n\n';
+    }
+    if (id === 2) {
+        console.log('Im in2');
+        data = "Ошибка деавторизации учителя: \n";
+        data += "Имя пользователя: " + msg.chat.username + ',\n';
+        data += "ID чата: " + msg.chat.id + ',\n';
+        data += "Время: " + date.toLocaleString() + '.\n\n';
+    }
+    fs.appendFileSync('log.txt', data);
 }
 function parseMessage(msg) {
     args = msg.text.toString().split(" ");
@@ -113,8 +92,8 @@ bot.onText(/\/help/, msg => {
         bot.sendMessage(msg.chat.id, 'Команды для учителя:\n'
             + '/auth <логин> <пароль> -- авторизация в систему (обязательна!)\n'
             + '/death -- деавторизация (обязательна по окончанию урока или рабочего дня!)\n'
-            + '/next -- вызвать следующего ученика\n');
-    } else {
+            + '/next -- вызвать следующего ученика\n');}
+    else {
         bot.sendMessage(msg.chat.id, 'Команды для ученика: \n'
             + '/add -- добавится в очередь\n'
             + '/leave -- покинуть очередь');
@@ -129,21 +108,23 @@ bot.onText(/\/sendargs/, msg => {
 bot.onText(/\/auth/, msg => {
     args = parseMessage(msg);
     if (args[0] === config.login && args[1] === config.password) {
-        bot.sendMessage(msg.chat.id, "Успешная авторизация учителя! Удачного дня");
-        logToFile('log', msg, 1);
+        bot.sendMessage(msg.chat.id, "Успешная авторизация учителя! Удачного дня!", teacherKeyboard);
+        teacherID = msg.chat.id;
+        logToFile(msg, 1);
     } else {
-
+        bot.sendMessage(msg.chat.id, "Неверный логин и/или пароль");
+        errorToFile(msg, 1);
     }
 })
 
 bot.onText(/\/deauth/, msg => {
     if (msg.chat.id === teacherID) {
         teacherID = "";
-        bot.sendMessage(msg.chat.id, 'Деавторизован учитель');
-        logToFile('log', msg, 2);
+        bot.sendMessage(msg.chat.id, 'Деавторизован учитель', studentKeyboard);
+        logToFile(msg, 2);
 
     } else {
-        logToFile('error', msg, 2);
+        errorToFile(msg, 2);
     }
 })
 
@@ -151,9 +132,9 @@ bot.onText(/Выйти/, msg => {
     if (msg.chat.id === teacherID) {
         teacherID = "";
         bot.sendMessage(msg.chat.id, 'Деавторизован учитель', studentKeyboard);
-        logToFile('log', msg, 2);
+        logToFile(msg, 2);
     } else {
-        logToFile('error', msg, 2);
+        errorToFile(msg, 2);
     }
 })
 
