@@ -18,7 +18,7 @@ const studentKeyboard = {
 };
 const teacherKeyboard = {
     reply_markup: JSON.stringify({
-        keyboard: [["Вызвать ученика", "Посмотреть очередь"], ["Выйти"]],
+        keyboard: [["Вызвать ученика", "Посмотреть очередь"], ["Загрузить логи"], ["Выйти"]],
     })
 }
 function logToFile(msg, id) {
@@ -39,18 +39,18 @@ function logToFile(msg, id) {
 }
 function errorToFile(msg, id) {
     var date = new Date(msg.date * 1000);
-    if (id === 1) {
-        data = "Ошибка авторизации учителя: \n";
-        data += "Имя пользователя: " + msg.chat.username + ',\n';
-        data += "ID чата: " + msg.chat.id + ',\n';
-        data += "Время: " + date.toLocaleString() + '.\n\n';
-    }
-    if (id === 2) {
-        console.log('Im in2');
-        data = "Ошибка деавторизации учителя: \n";
-        data += "Имя пользователя: " + msg.chat.username + ',\n';
-        data += "ID чата: " + msg.chat.id + ',\n';
-        data += "Время: " + date.toLocaleString() + '.\n\n';
+    switch (id) {
+        case 1:
+            data = "Ошибка авторизации учителя: \n";
+            data += "Имя пользователя: " + msg.chat.username + ',\n';
+            data += "ID чата: " + msg.chat.id + ',\n';
+            data += "Время: " + date.toLocaleString() + '.\n\n';
+        case 2:
+            console.log('Im in2');
+            data = "Ошибка деавторизации учителя: \n";
+            data += "Имя пользователя: " + msg.chat.username + ',\n';
+            data += "ID чата: " + msg.chat.id + ',\n';
+            data += "Время: " + date.toLocaleString() + '.\n\n';
     }
     fs.appendFileSync('log.txt', data);
 }
@@ -90,9 +90,11 @@ bot.onText(/\/start/, msg => {
 bot.onText(/\/help/, msg => {
     if (msg.chat.id === teacherID) {
         bot.sendMessage(msg.chat.id, 'Команды для учителя:\n'
+            + 'УСТАРЕЛО!'
             + '/auth <логин> <пароль> -- авторизация в систему (обязательна!)\n'
             + '/death -- деавторизация (обязательна по окончанию урока или рабочего дня!)\n'
-            + '/next -- вызвать следующего ученика\n');}
+            + '/next -- вызвать следующего ученика\n');
+    }
     else {
         bot.sendMessage(msg.chat.id, 'Команды для ученика: \n'
             + '/add -- добавится в очередь\n'
@@ -204,8 +206,8 @@ bot.onText(/\/next/, msg => {
 bot.onText(/Вызвать ученика/, msg => {
     if (msg.chat.id === teacherID) {
         filterArray();
-        queue = tempQueue;
-        bot.sendMessage(queue.id.shift(), 'Ваша очередь!');
+        let user = queue.shift();
+        bot.sendMessage(user.id, 'Ваша очередь!');
     }
 })
 
@@ -216,7 +218,6 @@ bot.onText(/\/seeq/, msg => {
 })
 
 bot.onText(/Посмотреть очередь/, msg => {
-    bot.sendMessage(msg.chat.id, "im in");
     if (msg.chat.id === teacherID) {
         bot.sendMessage(msg.chat.id, "im in");
         let str = "Вот очередь:\n\n";
@@ -245,4 +246,10 @@ bot.onText(/\/sendid/, msg => {
     console.log(chat);
     queue.shift();
     bot.sendMessage(msg.chat.id, chat.id);
+})
+
+bot.onText(/Загрузить логи/, msg => {
+    if (msg.chat.id === teacherID) {
+        bot.sendDocument(msg.chat.id, "log.txt");
+    }
 })
